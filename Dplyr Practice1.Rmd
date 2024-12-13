@@ -1,0 +1,166 @@
+---
+title: "Untitled"
+author: "Ezebuike Esther Chiwendu_22154100073_Activity.rmd"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+carD = read.csv("C:/Users/User/Downloads/MAHE FILES/MAHE SEMESTER 1/R and Python/MAHE R WK3&4/mtcars3.csv")
+head(carD,5)
+```
+
+```{r}
+#To check for the data structure
+str(carD)
+nrow(carD)
+ncol(carD)
+dim(carD)
+colnames(carD)
+```
+
+
+```{r}
+#To convert into columns
+categorical_cols = c("vs", "am")
+carD[categorical_cols] = lapply(carD[categorical_cols], as.factor)
+str(carD)
+```
+
+
+```{r}
+#Selecting data
+#THe SELECT() is used to select a particular column
+library("tidyverse")
+select(carD, wt)
+```
+
+
+```{r}
+#To select with a column excluded
+select(carD, -wt)
+```
+
+
+```{r}
+#To select multiple columns
+select(carD, c(am, vs))
+```
+
+```{r}
+#To exclude multiple columns
+select(carD, -c(am, vs))
+```
+
+
+```{r}
+#The filter() is used the select the rows
+filter(carD, vs==0)
+```
+
+```{r}
+#To select with multiple criteria
+filter(carD, vs==1 & am==1)
+```
+
+
+```{r}
+#To select rows with more detailed criteria
+filter(carD, vs==0 & am==1 & (hp < 100 | hp > 150))
+```
+
+```{r}
+#To select the columns cyl and wt based on the row vs
+carD %>% filter(vs==0) %>% select(c(cyl, wt))
+```
+
+```{r}
+#To select the columns cyl and wt based on the rows vs=0 and hp>150
+carD %>% filter(vs==0 & hp > 150) %>% select(c(cyl, wt))
+```
+
+```{r}
+#The MUTATE() is used to create new columns
+mutate(carD, wtton = 0.45*wt)
+```
+
+```{r}
+#To calculate wtton for the wt whose row is not NA
+carD %>% filter(!is.na(wt)) %>% mutate(wtton = 0.45*wt)
+```
+
+
+```{r}
+#To check if the new variable/column wtton is in the data frame
+colnames(carD)
+```
+
+
+```{r}
+#To create another column
+carD.New = carD %>% mutate(cyltype = (ifelse(cyl > 4, 'High', 'Low')))
+carD.New
+```
+
+```{r}
+#Chaining and creating multiple columns with mutate
+carD.New = carD %>% mutate(cyltype = (ifelse(cyl > 4, 'High', 'Low')),wtton = 0.45*wt)
+carD.New
+```
+
+```{r}
+#To check if the new columns cyltype and wtton are in the data frame
+colnames(carD.New)
+```
+
+```{r}
+#To use chaining with summarize
+carD.New %>% summarise(mean(wtton))
+```
+
+```{r}
+#To return the mean weight of displacement and wton
+carD.New %>% summarise(mean(wtton), mean(disp))
+```
+
+
+```{r}
+#To chain group_by() and summarise
+carD.New %>% group_by(cyltype) %>% summarise(mean(disp), mean(wtton))
+```
+
+
+```{r}
+carD.New %>% group_by(vs) %>% summarise(mean(wtton), mean(disp))
+```
+
+
+```{r}
+#To group, summarise and arrange in descending order
+carD.New %>% group_by(cyltype) %>% summarise(mwt = mean(wtton), mdisp = mean(disp))
+```
+
+
+```{r}
+carD.New %>% group_by(vs) %>% summarise(mwt = mean(wtton), mdisp = mean(disp))
+```
+
+
+```{r}
+#To group and count
+carD.New %>% count(cyltype, vs)
+```
+
+```{r}
+carD.New %>% group_by(cyltype) %>% count()
+```
+
+```{r}
+#counting and sorting
+carD.New %>% count(cyltype) %>% arrange(n)
+```
+
