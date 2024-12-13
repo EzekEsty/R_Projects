@@ -1,0 +1,233 @@
+---
+title: "Students Performance"
+author: "Ezebuike Esther"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+Performance = read.csv("C:/Users/User/Downloads/Textbooks/StudentsPerformance.csv", header = TRUE)
+```
+
+###To get the first five rows
+```{r}
+head(Performance, 5)
+```
+#To get the structure
+```{r}
+str(Performance)
+```
+#To get the dimension
+```{r}
+dim(Performance)
+```
+#To get the number of columns and rows
+```{r}
+ncol(Performance)
+nrow(Performance)
+```
+#To get the column names
+```{r}
+colnames(Performance)
+```
+#To select a or some variable
+```{r}
+library('tidyverse')
+Rst1 <- Performance %>% select(lunch)
+head(Rst1, 10)
+```
+
+#To select more than one column
+```{r}
+Rst2 <- Performance %>% select(c(math_score, writing_score))
+head(Rst2,10)
+```
+
+#To exclude a column
+```{r}
+Rst3 <- Performance %>% select(-lunch)
+head(Rst3, 10)
+```
+
+#To exclude more than one column
+```{r}
+Rst4 <- Performance %>% select(-c(lunch, math_score, writing_score))
+head(Rst4, 10)
+```
+
+#To select rows or students with high school qualification 
+```{r}
+Rst5 <- filter(Performance, parental_education_status=='high school')
+head(Rst5, 10)
+```
+
+#To select students with ethnicity of group A
+```{r}
+Rst6 <- filter(Performance, race_ethnicity =='group A')
+head(Rst6, 10)
+```
+
+#To select female students whose parents have bachelor's degree
+```{r}
+Rst7 <- filter(Performance, c(gender == 'female' & parental_education_status == "bachelor's degree"))
+head(Rst7, 10)
+```
+
+#To get the minimum scores of the courses
+```{r}
+Performance %>% summarise(c(min(reading_score), min(math_score), min(writing_score)))
+```
+
+#To get the maximum scores of the courses
+```{r}
+Performance %>% summarise(c(max(reading_score), max(math_score), max(writing_score)))
+
+```
+
+#To select rows with students who are female and whose parents are high school and maths score is greater than 80 
+```{r}
+Rst8 <- Performance %>% filter(gender == 'female', parental_education_status == 'high school') %>% select(math_score)
+head(Rst8, 10)
+```
+
+#To get the gender and race of students who score more than 80 in maths
+```{r}
+Rst9 <- Performance %>% filter(math_score > 80) %>% select(gender, race_ethnicity)
+head(Rst9, 10)
+```
+
+#To select students who score greater than 80 in maths and less than 80 in reading based on gender and parent_educational_status
+```{r}
+Rst10 <- Performance %>% filter(math_score > 80 & reading_score < 80) %>% select(gender, parental_education_status)
+head(Rst10, 10)
+```
+
+#MUTATE
+#To get the avarage score of the three courses
+```{r}
+Performance.New = Performance %>% mutate(Average_scrore = (math_score + reading_score + writing_score)/3)
+```
+
+```{r}
+head(Performance.New, 10)
+```
+
+#To check for the minimum value of the average score
+```{r}
+Performance.New %>% summarise(min(Average_scrore))
+```
+
+#To check for the maximum value of the average score
+```{r}
+Performance.New %>% summarise(max(Average_scrore))
+
+```
+
+#To create a new categorical variable of 4-levels
+```{r}
+Students_Perf = Performance.New %>% mutate(performance_status = case_when(
+                      Average_scrore > 69 ~ "Excellent",
+                      Average_scrore > 49 ~ "Credit",
+                      Average_scrore > 30 ~ "Pass",
+                      TRUE ~ "Fail")) %>%
+                    mutate(performance_status = as.factor(performance_status))
+head(Students_Perf, 10)
+```
+
+#To check the structure of the new variable
+```{r}
+str(Students_Perf)
+```
+
+
+#To check the mean weight of the each courses based on the performance status
+```{r}
+Students_Perf %>% group_by(performance_status) %>% summarise(mean(math_score), mean(reading_score), mean(writing_score))
+```
+#Interpretation: students with credit pass had a mean weight of 58.85, those with excellent had 77.79, those with fail had 22.10 and students with a pass had 43.42. Most of the students passed excellently.
+
+
+
+#To a frequency count of students based on their performance
+```{r}
+Students_Perf %>% count(performance_status) %>% arrange(n)
+```
+#Interpretation: This was a very good performance. About 474 students had an excellent performance, 430 had a credit credit pass, 86 had a pass and 10 failed.
+
+
+#To check the frequency count of students based on their performance and gender
+```{r}
+Students_Perf %>% count(performance_status, gender) %>% arrange(n)
+```
+#Interpretation: The result of the analysis showed that about 275 female students had an excellent performance, 199 male students performed excellently, 223 male students had a credit pass, 207 female students had a credit pass, 56 male students had a pass, 30 female students had a pass. Finally, 6 female students failed and 4 male students failed.
+
+
+
+#To a frequency count of students based on their performance, gender and race
+```{r}
+Rst11 <- Students_Perf %>% count(performance_status, gender, race_ethnicity) %>% arrange(n)
+head(Rst11,10)
+```
+
+```{r}
+library('ggplot2')
+```
+
+
+
+#To plot a barchart of the performance status
+```{r}
+P1 = ggplot(data = Students_Perf) + 
+      geom_bar(mapping = aes(x = performance_status))
+P1
+```
+#Interpretation: The bar chart also showed that the highest performance was an excellent performance, while the least was a fail.
+
+
+#To plot a barchart of performance status based on gender
+```{r}
+P2 = ggplot(data = Students_Perf, aes(x = performance_status, color = gender)) + 
+        geom_bar(fill = 'red', alpha = 0.1, position = 'identity')
+P2
+```
+
+
+
+
+#To plot the boxplot of the students' Average score based on gender
+```{r}
+P3 = ggplot(data = Students_Perf) + 
+      geom_boxplot(mapping = aes(x = gender, y = Average_scrore), outlier.colour = 'green', outlier.shape = 19, outlier.size = 1.5, fill = 'blue')
+P3
+```
+#Interpretation: About 25% of the female students had an average score below 60, while the male students had an average score below 55.
+
+
+#To plot the histogram showing the distribution of the students' Average score
+
+```{r}
+P4 = ggplot(data = Students_Perf) + 
+      geom_histogram(mapping = aes(x = Average_scrore))
+P4
+```
+#Interpretation: The histogram showed the distribution of the average scores of the students. It is actually normal though skewed to the left. Most of the average scores are between 50 and 90. Therefore, only very few students had average scores below 30 and few had average scores between 95 and 100.
+
+
+
+#To plot the histogram showing the distribution of the students' Average score
+```{r}
+P5 = ggplot(data = Students_Perf, aes(x = Average_scrore, color = gender)) + 
+      geom_histogram(fill = 'red', binwidth = 3, alpha = 0.1 )
+P5
+```
+#Interpretation: The results showed that the females had a higher disdtribution than their male counterpart. This was because the average scores of the female students are higher than the males.
+
+
+
+#Bar chart showing the frequency distribution of performance status based on gender
+```{r}
+P8 = ggplot(data = Students_Perf) + 
+    geom_bar(mapping = aes(x = performance_status, fill = gender), position = "dodge")
+P8
+```
+#Interpretation: The results from the bar chart showed that more male students had a credit pass than the females. Most of the female students had an excellent performance than the male students. More male students had a pass than the females.
