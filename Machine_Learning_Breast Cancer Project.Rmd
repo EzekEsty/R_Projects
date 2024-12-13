@@ -1,0 +1,314 @@
+---
+title: "Breast Cancer Project"
+author: "Ezebuike Esther"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Load library
+library(mlbench)
+library(caret)
+library(tidyr)
+```
+
+```{r}
+data("BreastCancer")
+head(BreastCancer, n=20)
+```
+
+```{r}
+summary(BreastCancer)
+```
+
+```{r}
+dim(BreastCancer)
+```
+
+
+```{r}
+BreastCancer <- drop_na(BreastCancer)
+```
+
+```{r}
+dim(BreastCancer)
+```
+
+```{r}
+#spliting the dataset into train data and test data
+set.seed(7)
+
+#select 80% of the data for train data
+train_data <- createDataPartition(BreastCancer$Class, p=0.80, list = FALSE)
+
+#select 20% of the data for test data
+test_data <- BreastCancer[-train_data,]
+
+```
+
+```{r}
+#work with the train dataset
+dataset_train <- BreastCancer[train_data,]
+```
+
+```{r}
+head(dataset_train, n=20)
+```
+
+```{r}
+#dimension of data
+dim(dataset_train)
+```
+
+```{r}
+#check attribute data types
+sapply(dataset_train, class)
+```
+
+```{r}
+#the id column is redundant. Hence, remove it
+dataset_train <- dataset_train[,-1]
+```
+
+
+```{r}
+#convert the attributes to numeric
+for (i in 1:9) {
+dataset_train[,i] <- as.numeric(as.character(dataset_train[,i]))
+}
+```
+
+```{r}
+dim(test_data)
+```
+```{r}
+head(test_data, 5)
+```
+```{r}
+#the id column of the test_data is redundant. Hence, remove it
+test_data <- test_data[,-1]
+
+#convert the attributes of the test_data to numeric
+for (i in 1:9) {
+test_data[,i] <- as.numeric(as.character(test_data[,i]))
+}
+```
+
+```{r}
+dim(test_data)
+```
+
+
+
+
+```{r}
+#summary of dataset
+summary(dataset_train)
+```
+
+```{r}
+#create a frequency distribution table on the categorical attribute
+cbind(freq=table(dataset_train$Class),  percentage=prop.table(table(dataset_train$Class))*100)
+```
+The distribution suggest that the dataset is imbalanced.
+
+
+```{r}
+#summarize the correlations between the variables excluding the NA's
+Comp_cases <- complete.cases(dataset_train)
+cor(dataset_train[Comp_cases,1:9])
+
+```
+In summary, the matrix suggests that features like cell size, shape, and chromatin are strongly interrelated, whereas features like mitoses (cell division) and bare nuclei have relatively weaker associations with the other characteristics. 
+
+
+```{r}
+#create histogram of the attributes
+par(mfrow=c(3,3))
+for(i in 1:9) {
+hist(dataset_train[Comp_cases,i], main=names(dataset_train)[i])
+}
+```
+
+```{r}
+# density plot for each attribute
+par(mfrow=c(3,3))
+#complete_cases <- complete.cases(dataset)
+for(i in 1:9) {
+plot(density(dataset_train[Comp_cases,i]), main=names(dataset_train)[i])
+}
+
+#The plots are bimodal distributions (two bumps) and exponential looking distributions.
+```
+
+```{r}
+#boxplots for each attributes
+par(mfrow=c(3,3))
+for(i in 1:9) {
+  boxplot(dataset_train[,i], main = names(dataset_train[i]))
+}
+```
+
+```{r}
+#scatterplot atrix
+jittered_x <- sapply(dataset_train[,1:9], jitter)
+pairs(jittered_x, names(dataset_train[,1:9]), col = dataset_train$Class)
+```
+
+```{r}
+#since the attributes are discrete. create a barplot
+par(mfrow=c(3,3))
+for(i in 1:9) {
+barplot(table(dataset_train$Class,dataset_train[,i]), main=names(dataset_train)[i],
+legend.text=unique(dataset_train$Class))
+}
+```
+
+```{r}
+#Evaluating the Model
+```
+
+```{r}
+#create a 10-fold cross validation with 3 repeats
+trainControl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+metric <- "Accuracy"
+```
+
+
+```{r}
+#Evalualuating the model on both linear and non-linear algorithms
+
+# Logistic Regression (LR)
+set.seed(7)
+fit.glm <- train(Class~., data=dataset_train, method="glm", metric=metric, trControl=trainControl)
+
+# Linear Discriminant Analysis (LDA)
+set.seed(7)
+fit.lda <- train(Class~., data=dataset_train, method="lda", metric=metric, trControl=trainControl)
+
+# Regularized Logistic Regression (GLMNET)
+set.seed(7)
+fit.glmnet <- train(Class~., data=dataset_train, method="glmnet", metric=metric,
+trControl=trainControl)
+
+# K-Nearest Neighbour (KNN)
+set.seed(7)
+fit.knn <- train(Class~., data=dataset_train, method="knn", metric=metric, trControl=trainControl)
+
+# Classification and Reggression Tree (CART)
+set.seed(7)
+fit.cart <- train(Class~., data=dataset_train, method="rpart", metric=metric,
+trControl=trainControl)
+
+
+# SVM
+set.seed(7)
+fit.svm <- train(Class~., data=dataset_train, method="svmRadial", metric=metric,
+trControl=trainControl)
+```
+
+```{r}
+# Compare algorithms
+results <- resamples(list(LR=fit.glm, LDA=fit.lda, GLMNET=fit.glmnet, KNN=fit.knn,
+CART=fit.cart, SVM=fit.svm))
+summary(results)
+```
+KNN shows the highest median accuracy and mean performance, suggesting it is the most consistently high-performing model in this set.
+GLMNET and LDA also show very good accuracy, with their results close to KNN.
+CART, while performing well, shows somewhat lower median and mean accuracy compared to the others.
+All models have no missing data (NA's = 0).
+In conclusion, KNN appears to be the most accurate model overall based on this data, followed closely by GLMNET and LDA. CART has the lowest performance in terms of median and mean accuracy.
+
+
+```{r}
+dotplot(results)
+```
+
+The good accuracy can be seen across the board. All algorithms have a mean accuracy above 90%, well above the baseline of 65% that was predicted of benign. Also, Naive Bayes was 96.60%, GLMNET was 96.72% and KNN (97.50%) had the highest accuracy on the problem.
+
+
+```{r}
+#Transforming and normalizing skewed distributions
+
+# Logistic Regression (LR)
+set.seed(7)
+fit.glm <- train(Class~., data=dataset_train, method="glm", metric=metric, preProc=c("BoxCox"), trControl=trainControl)
+
+# Linear Discriminant Analysis (LDA)
+set.seed(7)
+fit.lda <- train(Class~., data=dataset_train, method="lda", metric=metric, preProc=c("BoxCox"), trControl=trainControl)
+
+# Regularized Logistic Regression (GLMNET)
+set.seed(7)
+fit.glmnet <- train(Class~., data=dataset_train, method="glmnet", metric=metric, preProc=c("BoxCox"),
+trControl=trainControl)
+
+# K-Nearest Neighbour (KNN)
+set.seed(7)
+fit.knn <- train(Class~., data=dataset_train, method="knn", metric=metric, preProc=c("BoxCox"), trControl=trainControl)
+
+# Classification and Reggression Tree (CART)
+set.seed(7)
+fit.cart <- train(Class~., data=dataset_train, method="rpart", metric=metric, preProc=c("BoxCox"),
+trControl=trainControl)
+
+
+# SVM
+set.seed(7)
+fit.svm <- train(Class~., data=dataset_train, method="svmRadial", metric=metric, preProc=c("BoxCox"),
+trControl=trainControl)
+```
+
+```{r}
+# Compare transformed algorithms
+transformedResults <- resamples(list(LR=fit.glm, LDA=fit.lda, GLMNET=fit.glmnet, KNN=fit.knn,
+CART=fit.cart, SVM=fit.svm))
+summary(transformedResults)
+```
+The accuracy of the previous best algorithm KNN was elevated to 97.44%. While SVM now has the most accurate mean accuracy at 97.99% in the new ranking.
+
+
+```{r}
+dotplot(transformedResults)
+```
+
+
+```{r}
+#Summarize the best model
+print(fit.svm)
+```
+
+Model Performance:
+Accuracy = 0.9799423: This is a very high accuracy, indicating the model is performing exceptionally well at distinguishing between benign and malignant classes.
+Kappa = 0.9569363: A Kappa score of 0.96 is also very high, indicating almost perfect agreement between predicted and actual labels, adjusting for chance agreement.
+
+In conclusion, the SVM model with an RBF kernel, using sigma = 0.1882722 and C = 0.25, is highly effective for this classification task. The cross-validation results show stable performance across different values of C, and the chosen model achieves high accuracy and Kappa, making it well-suited for classifying the two categories of the dataset.
+
+```{r}
+# Since the SVM made the best model, estimate skill of SVM on the validation dataset
+predictions <- predict(fit.svm, test_data)
+predictions
+```
+
+
+```{r}
+#confusion matrix
+confusionMatrix(predictions, test_data$Class)
+```
+
+True Positives (TP): 83 cases where the model correctly predicted benign.
+False Positives (FP): 1 case where the model incorrectly predicted benign when it was actually malignant.
+False Negatives (FN): 5 cases where the model incorrectly predicted malignant when it was actually benign.
+True Negatives (TN): 46 cases where the model correctly predicted malignant.
+
+The model performs very well with an accuracy of 95.56%, a Kappa of 0.904 (indicating excellent agreement), and high sensitivity (94.32%) and specificity (97.87%). The positive predictive value (0.9881) for benign is very high, indicating reliable identification of benign cases. The negative predictive value is also strong, though slightly lower. Overall, the model shows excellent predictive power for distinguishing between the two classes and has a high balanced accuracy of 96.10%.
+
+With 95.56% accuracy, the model demonstrates outstanding performance in predicting benign and malignant cases in breast cancer data. This high accuracy, combined with excellent sensitivity and specificity, suggests that the model is robust, reliable, and suitable for medical applications like cancer diagnosis.
+
+The 95% Confidence Interval (CI) for Accuracy is (0.9058, 0.9835), suggesting that the model's true accuracy likely falls within this range, with a high degree of certainty.
+
+High Performance: An accuracy of 95.56% indicates that the model is highly effective at distinguishing between the benign and malignant classes in the breast cancer dataset. This is a strong result, especially for medical diagnostics, where identifying the correct class (cancerous vs. non-cancerous) is critical. The model correctly predicted the class for 95.56% of the instances, meaning it correctly identified either benign or malignant cases in most instances. 
