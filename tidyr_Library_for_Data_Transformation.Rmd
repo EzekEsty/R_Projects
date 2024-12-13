@@ -1,0 +1,94 @@
+---
+title: "The tidyr Library for Data Transformation"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+table1 
+```
+
+```{r}
+table2
+```
+
+```{r}
+table3
+```
+
+```{r}
+table4a
+```
+
+```{r}
+table1 %>% mutate(rate = (cases/population) * 10000)
+```
+
+```{r}
+table1 %>% count(year, wt = cases)
+```
+
+
+```{r}
+ggplot(data = table1 %>% mutate(rate = (cases/population) * 10000)  , aes(x = year, y = rate)) + 
+  geom_line(aes(group = country), color = 'gray')+
+  geom_point(aes(color = country))
+```
+
+
+```{r}
+# Select year, country and population, and
+# turn the long dataframe into a wide one
+#spread is a fxn in tidyr that has takes two arguments(key & value)
+#key will be the column in the resulting dataframe we create
+table1 %>% select(c(year,country,population))
+```
+```{r}
+table1 %>% select(c(year,country,population)) %>% spread(key = country, value = population)
+```
+
+
+```{r}
+# Select year, country and cases, and
+# turn the long dataframe into a wide one
+#spread is a fxn in tidyr that has takes two arguments(key & value)
+#key will be the column in the resulting dataframe we create
+table1 %>% select(c(year,country, cases))
+```
+
+```{r}
+table1 %>% mutate(rate = (cases/population) * 10000)
+```
+
+```{r}
+table1 %>% mutate(rate = (cases/population) * 10000) %>% select(c(year,country,rate)) %>% spread(key = country, value = rate)
+```
+
+
+```{r}
+# Create a wide dataframe
+table1.wide = table1 %>% filter(!is.na(cases)) %>% mutate(rate = (cases/population) * 10000) %>% select(c(year,country,rate)) %>% spread(key = country, value = rate)
+
+head(table1.wide)
+```
+
+```{r}
+# Convert wide dataframe to a long one
+#The gather() is a fxn in Tidyr that converts a wide dataframe to a long one
+head(table1.wide)
+```
+
+```{r}
+table1.wide %>% gather(key = 'country', 'rate', -year)
+```
+
+
+```{r}
+# Exporting data
+write_csv(table1.wide, file = 'table1wide.csv')
+```
