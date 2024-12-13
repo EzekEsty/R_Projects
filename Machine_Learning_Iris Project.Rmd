@@ -1,0 +1,252 @@
+---
+title: "Iris Data Project"
+author: "Ezebuike Esther"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#load library
+library(corrplot)
+library(caret)
+library(klaR)
+```
+```{r}
+#load data
+data("iris")
+head(iris, n=20)
+```
+
+```{r}
+#calculate correlation
+correlations <-cor(iris[,1:4])
+correlations
+
+```
+There are Strong Positive Correlations between Sepal.Length and Petal.Length, as well as between Petal.Length and Petal.Width.
+
+There are moderate to weak negative correlations between Sepal.Width and both Petal.Length and Petal.Width.
+
+This correlation matrix reveals important insights into how the features of the Iris dataset relate to one another, with petal dimensions being highly correlated with one another, while sepal width shows weak to moderate negative correlations with the other features.
+
+```{r}
+#plot correlations
+corrplot(correlations, method = "circle")
+```
+Interpretation: A dot-representation was used where blue represents positive correlation and red negative.The larger the dot the larger the correlation. We can see that the matrix is symmetrical and that the diagonal attributes are perfectly positively correlated (because it shows the correlation of each attribute with itself). We can see that some of the attributes are highly correlated.
+
+
+```{r}
+#create a pair-wise scatter plot for the four attributes
+pairs(iris, col = 'blue')
+```
+```{r}
+#using the class label to separate the classes
+pairs(Species~., data=iris, col=iris$Species)
+```
+```{r}
+#create box and whisker plot
+x <- iris[,1:4]
+y <- iris[,5]
+featurePlot(x=x, y=y, plot="box")
+```
+
+```{r}
+data <- iris
+```
+
+
+```{r}
+#spliting the dataset into train and test data
+
+data_train <- createDataPartition(data$Species, p=0.80, list = FALSE)
+data_test <- data[-data_train,]
+```
+
+```{r}
+#working with the training dataset
+Dtrain <- data[data_train,]
+```
+
+
+```{r}
+#SUMMARIZE DATASET
+
+#data dimension
+dim(Dtrain)
+```
+The training data has 120 instances and 5 attributes
+
+```{r}
+#Type of attributes
+sapply(Dtrain, class)
+```
+All of the inputs are double and that the class value is a factor
+
+```{r}
+#Take a peek at the 1st 5 rows of your data
+head(Dtrain,5)
+```
+```{r}
+#list the levels for the class variable 
+levels(Dtrain$Species)
+```
+ In the results, the class variable has 3 different labels. Hence, this is a multi-class or a multinomial classification problem. If there were two levels, it
+would be a binary classification problem.
+
+
+```{r}
+#show a breakdown of each class in a frequency table
+cbind(freq = table(Dtrain$Species), percentage = prop.table(table(Dtrain$Species))*100)
+```
+Each class has the same number of instances (40 or 33% of the dataset).
+
+```{r}
+#Statisical Summary
+summary(Dtrain)
+```
+Sepal dimensions (length and width) are generally more symmetric than petal dimensions (length and width), which exhibit mild skewness.
+The species are equally distributed, which is common in the Iris dataset, ensuring no class imbalance.
+These descriptive statistics give a broad understanding of the central tendency, spread, and skewness of the features, offering a foundation for further analysis or model building.
+```{r}
+#Data Pre-processing (standarding the parameters)
+preprocess_Params <- preProcess(iris[,1:4], method=c("center", "scale"))
+```
+
+```{r}
+#print the preprocessed parameters
+print(preprocess_Params)
+```
+```{r}
+#transform the preprocessed parameters
+transform <- predict(preprocess_Params, iris[,1:4])
+```
+
+
+```{r}
+#summarize the transformed parameters
+summary(transform)
+```
+```{r}
+#Data Visualization
+
+#separate the input data
+x <- Dtrain[,1:4]
+y <- Dtrain[,5]
+```
+
+```{r}
+par(mfrow=c(1,4))
+for (i in 1:4) {
+  boxplot(x[,i], main = names(iris)[i])
+}
+```
+
+
+```{r}
+#barplot for class breakdowm
+plot(y)
+```
+
+```{r}
+#Scatterplot matrix
+featurePlot(x=x, y=y, plot = "ellipse")
+```
+
+```{r}
+#Box and Whisker plot
+featurePlot(x=x, y=y, plot = "box")
+```
+It shows that there are clearly different distributions of the attributes for
+each class value.
+
+
+```{r}
+#Density plot of the attributes
+scales <- list(x=list(relation = "free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot = "density", scales=scales)
+
+```
+
+
+
+```{r}
+#Evaluation of some Algorithms
+#10-fold cross validation will be used to estimate accuracy. This will split our dataset into 10parts, train in 9 and test on 1 and repeat for all combinations of train-test splits.
+```
+
+```{r}
+#10 fold cross validation
+trainControl <- trainControl(method = "cv", number = 10)
+metric <- "Accuracy"
+```
+The metric of Accuracy will be used to evaluate models. This is a ratio of the number of correctly predicted instances divided by the total number of instances in the dataset multiplied by 100 to give a percentage (e.g. 95% accurate).
+
+
+```{r}
+#Evaluating five different models
+
+#LDA
+set.seed(7)
+fit.lda <- train(Species~., data=Dtrain, method="lda", metric=metric, trControl=trainControl)
+
+#CART (Classification and Regression Tress)
+set.seed(7)
+fit.cart <- train(Species~., data=Dtrain,method="rpart", metric=metric, trControl=trainControl)
+
+#KNN (K Nearest Neighbour)
+set.seed(7)
+fit.knn <- train(Species~., data=Dtrain, method="knn", metric=metric, trControl=trainControl)
+
+#SVM (Support Vector Machine)
+set.seed(7)
+fit.svm <- train(Species~., data=Dtrain, method="svmRadial", metric=metric, trControl=trainControl)
+
+#RF (Random Forest)
+set.seed(7)
+fit.rf <- train(Species~., data = Dtrain, method="rf", metric=metric, trControl=trainControl)
+```
+
+A good mixture of simple linear (LDA), non-linear (CART, KNN) and complex non-linear methods (SVM, RF). We reset the random number seed before reach run to ensure that the evaluation of each algorithm is performed using exactly the same data splits. It ensures the results are directly comparable.
+
+```{r}
+#Summary Accuracy of models
+fitted_Results <- resamples(list(lda = fit.lda, cart = fit.cart, knn = fit.knn, svm = fit.svm, rf = fit.rf))
+summary(fitted_Results)
+```
+All models (LDA, CART, KNN, SVM, and RF) perform very well, with most models having high median and mean accuracy values, generally close to 1.0.
+The minimum accuracy for all models is 0.83, indicating occasional lower performance, but overall, these models provide high accuracy in predicting the Iris species.
+KNN, Random Forest, and LDA show the highest classification accuracy, with perfect performance for the majority of cases.
+
+LDA model has the highest and accuracy of 0.9750000.
+
+```{r}
+dotplot(fitted_Results)
+```
+
+
+```{r}
+#Summarize the best model
+print(fit.lda)
+```
+
+```{r}
+# Since the LDA made the best model, estimate skill of LDA on the validation dataset
+predictions <- predict(fit.lda, data_test)
+predictions
+```
+
+```{r}
+#confusion matrix
+confusionMatrix(predictions, data_test$Species)
+```
+Accuracy is 100%, and the model's predictions perfectly match the true labels across all three classes.
+All metrics (sensitivity, specificity, precision, etc.) are 1 for each class, indicating no misclassifications or false positives/negatives.
+The model's Kappa value of 1 further confirms that the predicted and true labels are in perfect agreement.
+
+In conclusion, accuracy refers to the percentage of correct predictions made by the model. An accuracy of 97.5% means that the model correctly predicted the class of the iris flowers in 97.5% of the cases.
+This high accuracy suggests that the model is performing very well in classifying the flowers into the three species: setosa, versicolor, and virginica.
